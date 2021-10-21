@@ -112,6 +112,8 @@ class MaxCliqueSolver(Solver):
         self.n_edges = 0
 
         self.graph = self.get_graph()
+        self.ind_sets = []
+        self.get_ind_sets()
 
     def get_graph(self):
         assert self.path.endswith(".clq")
@@ -140,6 +142,20 @@ class MaxCliqueSolver(Solver):
 
         return g
 
+    def get_ind_sets(self):
+        strategies = [nx.coloring.strategy_largest_first,
+                      nx.coloring.strategy_random_sequential,
+                      nx.coloring.strategy_independent_set,
+                      nx.coloring.strategy_connected_sequential_bfs,
+                      nx.coloring.strategy_connected_sequential_dfs,
+                      nx.coloring.strategy_saturation_largest_first]
+
+        for strategy in strategies:
+            d = nx.coloring.greedy_color(self.graph, strategy=strategy)
+            for color in set(color for node, color in d.items()):
+                self.ind_sets.append(
+                    [key for key, value in d.items() if value == color])
+
     def _get_constraint(self, ind, names, use_ind=True):
         size = len(names)
         if use_ind:
@@ -147,8 +163,8 @@ class MaxCliqueSolver(Solver):
         else:
             indexes = deepcopy(names)
         values = [0] * size
-        values[ind[0]] = 1
-        values[ind[1]] = 1
+        for i in ind:
+            values[i] = 1
         return [indexes, values]
 
     def get_variables(self):
@@ -162,9 +178,11 @@ class MaxCliqueSolver(Solver):
         f_e = inverted[0]
         first_constraint = self._get_constraint(f_e, self.names, use_ind=False)
         other_constraints = [self._get_constraint(edge, self.names) for edge in inverted[1:]]
+        independent_constraints = [self._get_constraint(ind_set, self.names) for ind_set in self.ind_sets]
 
         constraints = [first_constraint]
         constraints.extend(other_constraints)
+        constraints.extend(independent_constraints)
 
         return constraints
 
