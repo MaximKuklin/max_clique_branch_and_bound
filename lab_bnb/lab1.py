@@ -1,5 +1,6 @@
 import argparse
 import os
+import networkx as nx
 from typing import Union
 import cplex
 from copy import deepcopy
@@ -131,7 +132,7 @@ class MaxCliqueSolver(Solver):
             elif line.startswith('c'):
                 print(line)
 
-        g = Graph(n=n, edges=edges)
+        g = nx.Graph(edges)
 
         self.graph = g
         self.n_vertex = n
@@ -156,7 +157,7 @@ class MaxCliqueSolver(Solver):
         return names, obj, lower_bounds, upper_bounds
 
     def get_constraints(self):
-        inverted = self.graph.complementer().get_edgelist()
+        inverted = list(nx.complement(self.graph).edges())
 
         f_e = inverted[0]
         first_constraint = self._get_constraint(f_e, self.names, use_ind=False)
