@@ -186,22 +186,26 @@ class MaxCliqueSolver(Solver):
 
         return constraints
 
-start_full = time()
-clique_problem = MaxCliqueSolver(mode="ILP", graph_path="data/DIMACS_all_ascii/brock200_2.clq")
+def main():
+    start_full = time()
+    clique_problem = MaxCliqueSolver(mode="ILP", graph_path="data/DIMACS_all_ascii/brock200_2.clq")
 
-names, obj, lower_bounds, upper_bounds = clique_problem.get_variables()
-clique_problem.set_variables(names, obj, lower_bounds, upper_bounds)
+    names, obj, lower_bounds, upper_bounds = clique_problem.get_variables()
+    clique_problem.set_variables(names, obj, lower_bounds, upper_bounds)
 
-constraints = clique_problem.get_constraints()
-clique_problem.set_constraints(constraints, "L", rhos=1)
+    constraints = clique_problem.get_constraints()
+    clique_problem.set_constraints(constraints, "L", rhos=1)
 
-clique_problem.create_problem()
-solution, t = clique_problem.solve()
-end_full = time()
+    clique_problem.create_problem()
+    solution, t = clique_problem.solve()
+    end_full = time()
 
-clique = np.argwhere(np.array(solution.get_values()) > 1 - EPS).squeeze()
-print(f"Clique vertexes:\n{clique}\n")
-print(f"Max clique size: {clique.size}\n")
+    clique = np.argwhere(np.array(solution.get_values()) > 1 - EPS).squeeze()
+    print(f"Clique vertexes:\n{clique}\n")
+    print(f"Max clique size: {clique.size}\n")
 
-print(f"{end_full - start_full:.4f} s. was spent on full pipeline")
-print(f"{t:.4f} s. was spent on solver")
+    print(f"{end_full - start_full:.4f} s. was spent on full pipeline")
+    print(f"{t:.4f} s. was spent on solver")
+
+if __name__ == '__main__':
+    main()
