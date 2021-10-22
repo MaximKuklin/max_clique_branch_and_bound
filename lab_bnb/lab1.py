@@ -72,8 +72,12 @@ class Solver:
             self.constraint_names = [f"с{i}" for i in range(0, len(self.constraints))]
 
     def _set_mode(self):
-        for i in range(len(self.obj)):
-            self.problem.variables.set_types(i, self.problem.variables.type.binary)
+        if self.mode == "ILP":
+            for i in range(len(self.obj)):
+                self.problem.variables.set_types(i, self.problem.variables.type.binary)
+        if self.mode == "LP":
+            for i in range(len(self.obj)):
+                self.problem.variables.set_types(i, self.problem.variables.type.continuous)
 
         for i in range(len(self.rhos)):
             if self.mode == "ILP":
