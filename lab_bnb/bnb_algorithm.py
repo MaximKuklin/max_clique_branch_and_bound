@@ -72,18 +72,20 @@ class BranchAndBoundSolver(MaxCliqueSolver):
             if max_idx is None:
                 self.best_solution = sum(self.variables)
                 self.best_vertexes = self.variables
+                print(self.best_solution)
                 return self.best_solution
             else:
                 self.branch_num += 1
                 current_branch = self.branch_num
 
-                self._create_branch_constraint(max_idx, 1.0, current_branch)
+                self._create_branch_constraint(max_idx, 0.0, current_branch)
                 branch_1 = self.branching_largest_first()
                 self.problem.linear_constraints.delete(f'branch_{current_branch}')
 
-                self._create_branch_constraint(max_idx, 0.0, current_branch)
+                self._create_branch_constraint(max_idx, 1.0, current_branch)
                 branch_2 = self.branching_largest_first()
                 self.problem.linear_constraints.delete(f'branch_{current_branch}')
+
                 return max(branch_1, branch_2)
         return 0
 
