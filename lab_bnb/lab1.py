@@ -47,6 +47,8 @@ class Solver:
             names=self.constraint_names
         )
 
+        self._set_mode()
+
         self.problem.set_log_stream(None)
         self.problem.set_results_stream(None)
 
@@ -97,7 +99,6 @@ class Solver:
                     float(self.obj[i]), float(self.upper_bounds[i]), float(self.lower_bounds[i])
 
     def solve(self):
-        self._set_mode()
         start = time()
         self.problem.solve()
         end = time()
