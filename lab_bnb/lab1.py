@@ -119,6 +119,8 @@ class MaxCliqueSolver(Solver):
         self.graph = self.get_graph()
         self.ind_sets = []
         self.get_ind_sets()
+        self.set_complement()
+        self.remove_pairs()
 
     def get_graph(self):
         assert self.path.endswith(".clq")
@@ -161,6 +163,17 @@ class MaxCliqueSolver(Solver):
                 self.ind_sets.append(
                     [key for key, value in d.items() if value == color])
 
+    def set_complement(self):
+        inverted = list(nx.complement(self.graph).edges())
+        self.complement = inverted
+
+    def remove_pairs(self):
+        for ind_set in self.ind_sets:
+            pairs = list(itertools.product(ind_set, ind_set))
+            for pair in pairs:
+                if pair in self.complement:
+                    self.complement.remove(pair)
+
     def _get_constraint(self, ind, names, use_ind=True):
         size = len(names)
         if use_ind:
@@ -178,11 +191,10 @@ class MaxCliqueSolver(Solver):
         return names, obj, lower_bounds, upper_bounds
 
     def get_constraints(self):
-        inverted = list(nx.complement(self.graph).edges())
 
-        f_e = inverted[0]
+        f_e = self.complement[0]
         first_constraint = self._get_constraint(f_e, self.names, use_ind=False)
-        other_constraints = [self._get_constraint(edge, self.names) for edge in inverted[1:]]
+        other_constraints = [self._get_constraint(edge, self.names) for edge in self.complement[1:]]
         independent_constraints = [self._get_constraint(ind_set, self.names) for ind_set in self.ind_sets]
 
         constraints = [first_constraint]
