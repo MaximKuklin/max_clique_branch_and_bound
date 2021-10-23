@@ -17,7 +17,7 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         super().__init__(mode, graph_path, sense)
 
         self.solution = None
-        self.best_solution = 0
+        self.best_solution = 8
         self.best_vertexes = None
         self.branch_num = 0
 
@@ -90,10 +90,14 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         return 0
 
 
-bnb = BranchAndBoundSolver(mode="LP", graph_path="data/DIMACS_all_ascii/debug.clq")
+bnb = BranchAndBoundSolver(mode="LP", graph_path="data/DIMACS_all_ascii/johnson16-2-4.clq")
 
+start = time()
 bnb.branching_largest_first()
+end = time()
 
 # print(answer)
 print(bnb.best_solution)
 print(bnb.best_vertexes)
+
+print(f"Time {end - start:.2f} sec.")
