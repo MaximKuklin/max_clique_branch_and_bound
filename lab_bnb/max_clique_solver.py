@@ -106,7 +106,7 @@ class Solver:
 
 
 class MaxCliqueSolver(Solver):
-    def __init__(self, mode, graph_path, sense='maximize'):
+    def __init__(self, mode, graph_path, iters, sense='maximize'):
         super().__init__(mode, sense)
 
         self.path = graph_path
@@ -115,7 +115,7 @@ class MaxCliqueSolver(Solver):
 
         self.graph = self.get_graph()
         self.ind_sets = []
-        self.get_ind_sets()
+        self.get_ind_sets(iters)
         self.set_complement()
         self.remove_pairs()
 
@@ -136,7 +136,7 @@ class MaxCliqueSolver(Solver):
                 edge = (int(edge[0]) - 1, int(edge[1]) - 1)  # to start from 0
                 edges.append(edge)
             elif line.startswith('c'):
-                print(line)
+                print(line[:-1])
 
         g = nx.Graph(edges)
 

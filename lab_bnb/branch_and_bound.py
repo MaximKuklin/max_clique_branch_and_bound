@@ -3,14 +3,14 @@ import math
 import numpy as np
 from time import time
 
-from optimization.lab_bnb.lab1 import MaxCliqueSolver
+from optimization.lab_bnb.max_clique_solver import MaxCliqueSolver
 
 EPS = 1e-5
 
 
 class BranchAndBoundSolver(MaxCliqueSolver):
-    def __init__(self, mode, graph_path, sense='maximize'):
-        super().__init__(mode, graph_path, sense)
+    def __init__(self, mode, graph_path, iters, sense='maximize'):
+        super().__init__(mode, graph_path, iters, sense)
 
         self.solution = None
         self.best_solution = 0
@@ -23,7 +23,7 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         pass
 
     def _first_step(self):
-        # self.clique_problem = MaxCliqueSolver(mode=self.mode, graph_path=self.path)
+
         names, obj, lower_bounds, upper_bounds = super().get_variables()
         self.set_variables(names, obj, lower_bounds, upper_bounds)
 
@@ -105,6 +105,8 @@ class BranchAndBoundSolver(MaxCliqueSolver):
 def parse_args():
     args = argparse.ArgumentParser('Solve Max Clique Problem using BnB')
     args.add_argument('-p', '--path', required=True, help='Path to file DIMACS file')
+    args.add_argument('--iter_coloring', required=False, default=50, type=int,
+                      help="Set how many times run graph coloring algorithm")
     args = args.parse_args()
 
     return args
@@ -115,18 +117,17 @@ def main():
     args = parse_args()
 
     full_start = time()
-    bnb = BranchAndBoundSolver(mode="LP", graph_path=args.path)
+    bnb = BranchAndBoundSolver(mode="LP", graph_path=args.path, iters=args.iter_coloring)
 
     start = time()
     bnb.branching_largest_first()
     end = time()
 
-    # print(answer)
     print(f"Final max clique has size {math.floor(bnb.best_solution)}")
     print(f"Vertexes are: {bnb.best_vertexes}")
 
-    print(f"\nFull Time {end - full_start:.2f} sec.")
-    print(f"CPLEX Time {end - start:.2f} sec.")
+    print(f"\nFull Time {end - full_start:.4f} sec.")
+    print(f"CPLEX Time {end - start:.4f} sec.")
 
 
 if __name__ == '__main__':
