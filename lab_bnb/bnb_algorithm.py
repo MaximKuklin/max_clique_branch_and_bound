@@ -1,4 +1,5 @@
-import networkx as nx
+import argparse
+import math
 from typing import Union
 import cplex
 from copy import deepcopy
@@ -84,8 +85,10 @@ class BranchAndBoundSolver(MaxCliqueSolver):
 
         if idx is None:
             self.best_solution = sum(self.variables)
-            self.best_vertexes = self.variables
-            print(self.best_solution)
+            self.best_vertexes = np.argwhere(
+                (1-EPS < np.array(self.variables)) & (np.array(self.variables) < 1+EPS)
+            ).squeeze().tolist()
+            print(f"Current best solution: {self.best_solution}")
         else:
             self.branch_num += 1
             current_branch = self.branch_num
@@ -101,16 +104,32 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         return
 
 
-full_start = time()
-bnb = BranchAndBoundSolver(mode="LP", graph_path="data/DIMACS_all_ascii/johnson8-2-4.clq")
+def parse_args():
+    args = argparse.ArgumentParser('Solve Max Clique Problem using BnB')
+    args.add_argument('-p', '--path', required=True, help='Path to file DIMACS file')
+    args = args.parse_args()
 
-start = time()
-bnb.branching_largest_first()
-end = time()
+    return args
 
-# print(answer)
-print(bnb.best_solution)
-print(bnb.best_vertexes)
 
-print(f"Full Time {end - full_start:.2f} sec.")
-print(f"CPLEX Time {end - start:.2f} sec.")
+def main():
+
+    args = parse_args()
+
+    full_start = time()
+    bnb = BranchAndBoundSolver(mode="LP", graph_path=args.path)
+
+    start = time()
+    bnb.branching_largest_first()
+    end = time()
+
+    # print(answer)
+    print(f"Final max clique has size {math.floor(bnb.best_solution)}")
+    print(f"Vertexes are: {bnb.best_vertexes}")
+
+    print(f"\nFull Time {end - full_start:.2f} sec.")
+    print(f"CPLEX Time {end - start:.2f} sec.")
+
+
+if __name__ == '__main__':
+    main()
