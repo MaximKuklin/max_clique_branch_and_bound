@@ -79,11 +79,14 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         idx = self._get_branch_variable()
 
         if idx is None:
-            self.best_solution = sum(self.variables)
-            self.best_vertexes = np.argwhere(
+            curr_clique = np.argwhere(
                 (1-EPS < np.array(self.variables)) & (np.array(self.variables) < 1+EPS)
             ).squeeze().tolist()
-            print(f"Current best solution: {self.best_solution}")
+
+            if self.is_clique(curr_clique):
+                self.best_solution = sum(self.variables)
+                self.best_vertexes = curr_clique
+                print(f"Current best solution: {math.floor(self.best_solution)}")
         else:
             self.branch_num += 1
             current_branch = self.branch_num

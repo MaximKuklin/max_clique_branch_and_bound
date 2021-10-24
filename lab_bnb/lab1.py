@@ -226,6 +226,12 @@ class MaxCliqueSolver(Solver):
         heuristic_clique_len = len(heuristic_clique)
         return list(heuristic_clique), heuristic_clique_len
 
+    def is_clique(self, nodes):
+        for i, j in itertools.combinations(nodes, 2):
+            if not self.graph.has_edge(i, j):
+                return False
+        return True
+
 
 def main():
     start_full = time()
