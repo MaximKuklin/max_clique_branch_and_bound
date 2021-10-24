@@ -54,9 +54,21 @@ class BranchAndBoundSolver(MaxCliqueSolver):
 
     def _get_branch_variable(self):
         float_vars = list(filter(lambda x: 0+EPS < x < 1-EPS, self.variables))
+
         if float_vars:
-            max_idx = self.variables.index(max(float_vars))
-            return max_idx
+            closest_to_zero_fn = (lambda list_value: abs(list_value - 0))
+            closest_to_one_fn = (lambda list_value: abs(list_value - 1))
+
+            closest_to_zero = min(float_vars, key=closest_to_zero_fn)
+            closest_to_one = 1 - min(float_vars, key=closest_to_one_fn)
+
+            if closest_to_zero < 1 - closest_to_one:
+                closest = closest_to_zero
+            else:
+                closest = closest_to_one
+
+            idx = self.variables.index(closest)
+            return idx
         else:
             return None
 
@@ -67,28 +79,25 @@ class BranchAndBoundSolver(MaxCliqueSolver):
 
         if int(sum(self.variables) + EPS) > self.best_solution:
 
-            max_idx = self._get_branch_variable()
+        idx = self._get_branch_variable()
 
-            if max_idx is None:
-                self.best_solution = sum(self.variables)
-                self.best_vertexes = self.variables
-                print(self.best_solution)
-                return self.best_solution
-            else:
-                self.branch_num += 1
-                current_branch = self.branch_num
+        if idx is None:
+            self.best_solution = sum(self.variables)
+            self.best_vertexes = self.variables
+            print(self.best_solution)
+        else:
+            self.branch_num += 1
+            current_branch = self.branch_num
 
-                self._create_branch_constraint(max_idx, 0.0, current_branch)
-                branch_1 = self.branching_largest_first()
-                self.problem.linear_constraints.delete(f'branch_{current_branch}')
+            self._create_branch_constraint(idx, 1.0, current_branch)
+            self.branching_largest_first()
+            self.problem.linear_constraints.delete(f'branch_{current_branch}')
 
-                self._create_branch_constraint(max_idx, 1.0, current_branch)
-                branch_2 = self.branching_largest_first()
-                self.problem.linear_constraints.delete(f'branch_{current_branch}')
+            self._create_branch_constraint(idx, 0.0, current_branch)
+            self.branching_largest_first()
+            self.problem.linear_constraints.delete(f'branch_{current_branch}')
 
-                return max(branch_1, branch_2)
-        return 0
-
+        return
 
 bnb = BranchAndBoundSolver(mode="LP", graph_path="data/DIMACS_all_ascii/johnson16-2-4.clq")
 
