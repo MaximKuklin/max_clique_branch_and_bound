@@ -27,8 +27,8 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         pass
 
     def _first_step(self):
-        self.clique_problem = MaxCliqueSolver(mode=self.mode, graph_path=self.path)
-        names, obj, lower_bounds, upper_bounds = self.clique_problem.get_variables()
+        # self.clique_problem = MaxCliqueSolver(mode=self.mode, graph_path=self.path)
+        names, obj, lower_bounds, upper_bounds = super().get_variables()
         self.set_variables(names, obj, lower_bounds, upper_bounds)
 
         constraints = self.get_constraints()
