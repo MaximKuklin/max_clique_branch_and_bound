@@ -77,7 +77,8 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         solution = self.solve()[0]
         self.variables = solution.get_values()
 
-        if int(sum(self.variables) + EPS) > self.best_solution:
+        if int(sum(self.variables) + EPS) <= self.best_solution:
+            return
 
         idx = self._get_branch_variable()
 
