@@ -211,6 +211,25 @@ class MaxCliqueSolver(Solver):
 
         return constraints
 
+    def greedy_clique_heuristic(self):
+
+        degrees = nx.degree(self.graph)
+        sorted_degrees = sorted(degrees, key=lambda x: x[1], reverse=True)
+
+        nodes = [node[0] for node in sorted_degrees]
+
+        heuristic_clique = set()
+
+        while nodes:
+            neighbors = list(self.graph.neighbors(nodes[0]))
+            heuristic_clique.add(nodes[0])
+            nodes.remove(nodes[0])
+            nodes = [node for node in nodes if node in neighbors]
+
+        heuristic_clique_len = len(heuristic_clique)
+        return list(heuristic_clique), heuristic_clique_len
+
+
 def main():
     start_full = time()
     clique_problem = MaxCliqueSolver(mode="ILP", graph_path="data/DIMACS_all_ascii/brock200_2.clq")

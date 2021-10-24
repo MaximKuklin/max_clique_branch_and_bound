@@ -35,11 +35,11 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         self.set_constraints(constraints, "L", rhos=1)
 
         self.create_problem()
-        # solution, t = self.solve()
 
-        # variables = solution.get_values()
+        self.best_vertexes, self.best_solution = self.greedy_clique_heuristic()
 
-        # self.variables = variables
+        print(f"Best founded clique using heuristic has size {self.best_solution}")
+
 
     def _create_branch_constraint(self, idx, constr, curr_branch_num):
 
