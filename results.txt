@@ -1,0 +1,12 @@
+CPU = AMD Ryzen 7 2700X Eight-Core Processor, CPU MHz = 2200, Time Limit = 3600 sec.
+Graph Time Clique_Size
+johnson8-2-4.clq 0.170 4
+johnson16-2-4.clq 1.381 8
+hamming8-4.clq 35.383 16
+c-fat200-1.clq 4.091 12
+c-fat200-2.clq 2.010 24
+c-fat200-5.clq 10.321 58
+c-fat500-1.clq 116.223 14
+c-fat500-2.clq 60.301 26
+MANN_a9.clq 0.261 16
+keller4.clq 128.44 11
