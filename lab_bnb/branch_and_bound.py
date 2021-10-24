@@ -16,6 +16,8 @@ class BranchAndBoundSolver(MaxCliqueSolver):
         self.best_solution = 0
         self.best_vertexes = None
         self.branch_num = 0
+        self.total_time = 0
+        self.max_time = 3600  # seconds
 
         self._first_step()
 
@@ -70,7 +72,12 @@ class BranchAndBoundSolver(MaxCliqueSolver):
 
     def branching_largest_first(self):
 
-        solution = self.solve()[0]
+        solution, t = self.solve()
+        self.total_time += t
+        if self.total_time >= self.max_time:
+            print("!!! Time limit reached, turning back !!!")
+            return
+
         self.variables = solution.get_values()
 
         if int(sum(self.variables) + EPS) <= self.best_solution:
