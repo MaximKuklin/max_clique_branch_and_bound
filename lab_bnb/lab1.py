@@ -149,7 +149,7 @@ class MaxCliqueSolver(Solver):
 
         return g
 
-    def get_ind_sets(self):
+    def get_ind_sets(self, iters=50):
         strategies = [nx.coloring.strategy_largest_first,
                       nx.coloring.strategy_random_sequential,
                       nx.coloring.strategy_independent_set,
@@ -157,11 +157,15 @@ class MaxCliqueSolver(Solver):
                       nx.coloring.strategy_connected_sequential_dfs,
                       nx.coloring.strategy_saturation_largest_first]
 
-        for strategy in strategies:
-            d = nx.coloring.greedy_color(self.graph, strategy=strategy)
-            for color in set(color for node, color in d.items()):
-                self.ind_sets.append(
-                    [key for key, value in d.items() if value == color])
+        sets_of_ind_set = []
+        for _ in range(iters):
+            for strategy in strategies:
+                d = nx.coloring.greedy_color(self.graph, strategy=strategy)
+                for color in set(color for node, color in d.items()):
+                    sets_of_ind_set.append(
+                        [key for key, value in d.items() if value == color])
+
+        self.ind_sets = set(tuple(row) for row in sets_of_ind_set)
 
     def set_complement(self):
         inverted = list(nx.complement(self.graph).edges())
@@ -192,13 +196,17 @@ class MaxCliqueSolver(Solver):
 
     def get_constraints(self):
 
-        f_e = self.complement[0]
-        first_constraint = self._get_constraint(f_e, self.names, use_ind=False)
-        other_constraints = [self._get_constraint(edge, self.names) for edge in self.complement[1:]]
-        independent_constraints = [self._get_constraint(ind_set, self.names) for ind_set in self.ind_sets]
+        constraints = []
 
-        constraints = [first_constraint]
-        constraints.extend(other_constraints)
+        if self.complement:
+            f_e = self.complement[0]
+            first_constraint = self._get_constraint(f_e, self.names, use_ind=False)
+            other_constraints = [self._get_constraint(edge, self.names) for edge in self.complement[1:]]
+            constraints.extend([first_constraint])
+            constraints.extend(other_constraints)
+
+        independent_constraints = [self._get_constraint(ind_set, self.names, use_ind=False) for ind_set in self.ind_sets]
+
         constraints.extend(independent_constraints)
 
         return constraints
