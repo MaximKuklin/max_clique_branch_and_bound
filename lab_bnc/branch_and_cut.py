@@ -11,8 +11,8 @@ from lab_bnb.branch_and_bound import parse_args, BranchAndBoundSolver
 EPS = 1e-5
 
 import random
-random.seed(0)        # or any integer
-np.random.seed(0)
+# random.seed(3)        # or any integer
+# np.random.seed(3)
 
 
 class BranchAndCutSolver(MaxCliqueSolver):
@@ -87,7 +87,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
             closest_to_zero = min(float_vars, key=closest_to_zero_fn)
             closest_to_one = 1 - min(float_vars, key=closest_to_one_fn)
 
-            if closest_to_zero < 1 - closest_to_one:
+            if np.round(closest_to_zero, 10) < 1 - np.round(closest_to_one, 10):
                 closest = closest_to_zero
             else:
                 closest = closest_to_one
@@ -128,21 +128,45 @@ class BranchAndCutSolver(MaxCliqueSolver):
 
         self.branching()
 
-    # def check_solution(self, nodes):
-    #     def separation(i, j):
-    #         independent_vertexes = set([i for i in range(len(self.variables))])
-    #         new_constraints = [i, j]
-    #         for vertex in (i, j):
-    #             non_neighbors = set(self.complement_graph.neighbors(vertex))
-    #             independent_vertexes.intersection_update(non_neighbors)
-    #
-    #     for i, j in itertools.combinations(nodes, 2):
-    #         if not self.graph.has_edge(i, j):
-    #             self.add_constraint()
-    #             return False
-    #     return True
+    def get_independent_vertexes(self, vertexes, independent_vertexes=None):
+        if independent_vertexes is None:
+            independent_vertexes = set([i for i in range(len(self.variables))])
+
+        for vertex in vertexes:
+            non_neighbors = set(self.complement_graph.neighbors(vertex))
+            independent_vertexes.intersection_update(non_neighbors)
+
+        while independent_vertexes:
+            new_vertex = random.choice(tuple(independent_vertexes))
+            non_neighbors = set(self.complement_graph.neighbors(new_vertex))
+            independent_vertexes.intersection_update(non_neighbors)
+            vertexes.append(new_vertex)
+
+        return vertexes
+
+    def check_solution(self, nodes):
+        new_constraints = []
+
+        for i, j in itertools.combinations(nodes, 2):
+            if not self.graph.has_edge(i, j):
+                constraint = self.get_independent_vertexes([i, j])
+                new_constraints.append(constraint)
+                # self.add_constraint(constraint)
+        return new_constraints
 
     def branching(self):
+
+        solution, t = self.solve()
+        # self.total_time += t
+        # if self.total_time >= self.max_time:
+        #     print("!!! Time limit reached, turning back !!!")
+        #     return
+
+        self.variables = solution.get_values()
+
+        if int(sum(self.variables) + EPS) <= self.best_solution:
+            return
+
         idx = self._get_branch_variable()
 
         if idx is None:
@@ -150,11 +174,15 @@ class BranchAndCutSolver(MaxCliqueSolver):
                 (1-EPS < np.array(self.variables)) & (np.array(self.variables) < 1+EPS)
             ).squeeze().tolist()
 
-            if self.is_clique(curr_clique):
+            check = self.check_solution(curr_clique)
+            if len(check) > 0:
+                for constraint in check:
+                    self.add_constraint(constraint)
+                self.cut()
+            else:
                 self.best_solution = sum(self.variables)
                 self.best_vertexes = curr_clique
                 print(f"Current best solution: {math.floor(self.best_solution)}")
-
         else:
             self.branch_num += 1
             current_branch = self.branch_num
@@ -167,14 +195,23 @@ class BranchAndCutSolver(MaxCliqueSolver):
             self.branching()
             self.problem.linear_constraints.delete(f'branch_{current_branch}')
 
-    def separation(self, values):
+    def separation(self, values, vertexes=None):
         # heuristic to find independent set with max weight
         values = np.array(values)
+        n = values.size
+        independent_vertexes = set([i for i in range(n)])
 
-        current_vertex = np.argmax(values)
-        weights_sum = values[current_vertex]
-        independent_vertexes = set([i for i in range(len(values))])
-        new_constraints = [current_vertex]
+        if vertexes is not None:  # used in branching function to find new constraint
+            non_neighbors = set(self.complement_graph.neighbors(vertexes[0]))
+            independent_vertexes.intersection_update(non_neighbors)
+            current_vertex = vertexes[1]
+            weights_sum = sum(vertexes)
+            new_constraints = [*vertexes]
+        else:  # uses in regular cut function
+            current_vertex = np.argmax(values)
+            weights_sum = values[current_vertex]
+            new_constraints = [current_vertex]
+
         while True:
             non_neighbors = set(self.complement_graph.neighbors(current_vertex))
             independent_vertexes.intersection_update(non_neighbors)
@@ -194,9 +231,18 @@ class BranchAndCutSolver(MaxCliqueSolver):
 
 def main():
     args = parse_args()
+    start = time()
     bnc = BranchAndCutSolver(mode="LP", graph_path=args.path, iters=args.iter_coloring)
     bnc.cut()
+    end = time()
+
+    print(f"CPLEX Time {end - start:.4f} sec.")
 
 
 if __name__ == '__main__':
     main()
+
+
+# TODO: tailing off
+# TODO: remove constraints with low slack vars
+# TODO: update code structre to make it more user-friendly
