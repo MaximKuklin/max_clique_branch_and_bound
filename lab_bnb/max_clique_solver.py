@@ -68,7 +68,7 @@ class Solver:
             self.rhos = [rhos] * len(constraints)
 
         if constraint_names is None:
-            self.constraint_names = [f"с{i}" for i in range(0, len(self.constraints))]
+            self.constraint_names = [f"c_{i}" for i in range(0, len(self.constraints))]
 
     def _set_mode(self):
         if self.mode == "ILP":

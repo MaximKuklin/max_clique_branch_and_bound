@@ -46,13 +46,13 @@ class BranchAndCutSolver(MaxCliqueSolver):
         constraints = []
 
         independent_constraints = \
-            [self._get_constraint(ind_set, self.names, use_ind=False) for ind_set in self.ind_sets]
+            [self._get_constraint(ind_set, self.names, use_ind=False) for ind_set in self.ind_sets if len(ind_set) > 1]
         single_constraints = \
             [self._get_constraint([single_vertex], self.names, use_ind=False) for single_vertex in range(len(self.names))]
 
         constraints.extend(independent_constraints)
-        constraints.extend(single_constraints)
-        return constraints
+        # constraints.extend(single_constraints)
+        return independent_constraints
 
     def _create_branch_constraint(self, idx, constr, curr_branch_num):
 
@@ -87,7 +87,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
             closest_to_zero = min(float_vars, key=closest_to_zero_fn)
             closest_to_one = 1 - min(float_vars, key=closest_to_one_fn)
 
-            if np.round(closest_to_zero, 10) < 1 - np.round(closest_to_one, 10):
+            if np.round(closest_to_zero, 10) <= 1 - np.round(closest_to_one, 10):
                 closest = closest_to_zero
             else:
                 closest = closest_to_one
@@ -97,10 +97,31 @@ class BranchAndCutSolver(MaxCliqueSolver):
         else:
             return None
 
-    def cut(self):
-        solution, t = self.solve()
-        self.variables = solution.get_values()
+    def tailing_off(self, solution):
+        slacks = np.array(solution.get_linear_slacks())
+        names = self.problem.linear_constraints.get_names()
 
+        remove_idx = np.argwhere(slacks > 0.0)[:, 0]
+        for idx in remove_idx:
+            name = names[idx]
+            if name.startswith('c'):
+                continue
+            self.problem.linear_constraints.delete(name)
+            print("deleted!")
+
+    def get_solution_vars(self):
+        try:
+            solution, t = self.solve()
+            self.variables = solution.get_values()
+            return solution
+        except:
+            return None
+
+    def cut(self):
+
+        solution = self.get_solution_vars()
+        if not solution:
+            return
         # self.total_time += t
         # if self.total_time >= self.max_time:
         #     print("!!! Time limit reached, turning back !!!")
@@ -122,14 +143,17 @@ class BranchAndCutSolver(MaxCliqueSolver):
                 self.add_constraint(result)
                 self.cut_num += 1
 
-            solution, t = self.solve()
-            self.variables = solution.get_values()
+            solution = self.get_solution_vars()
+            if not solution:
+                return
 
             obj_value = solution.get_objective_value()
-            print(obj_value)
+            # print(obj_value)
 
             if int(obj_value + EPS) <= self.best_solution:
                 return
+
+        self.tailing_off(solution)
 
         idx = self.branching()
         if idx == -1:
@@ -141,6 +165,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
             if len(check) > 0:
                 for constraint in check:
                     self.add_constraint(constraint)
+                    self.cut_num += 1
                 self.cut()
             else:
                 self.best_solution = sum(self.variables)
@@ -150,9 +175,6 @@ class BranchAndCutSolver(MaxCliqueSolver):
 
         self.branch_num += 1
         current_branch = self.branch_num
-
-        if idx == -1:
-            print()
 
         for val in [1.0, 0.0]:
             self._create_branch_constraint(idx, val, current_branch)
