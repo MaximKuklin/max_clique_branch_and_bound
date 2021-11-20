@@ -52,7 +52,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
 
         constraints.extend(independent_constraints)
         constraints.extend(single_constraints)
-        return independent_constraints
+        return constraints
 
     def _create_branch_constraint(self, idx, constr, curr_branch_num):
 
@@ -99,6 +99,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
 
     def cut(self):
         solution, t = self.solve()
+        self.variables = solution.get_values()
 
         # self.total_time += t
         # if self.total_time >= self.max_time:
@@ -107,7 +108,8 @@ class BranchAndCutSolver(MaxCliqueSolver):
 
         self.variables = solution.get_values()
 
-        if int(sum(self.variables) + EPS) <= self.best_solution:
+        obj_value = solution.get_objective_value()
+        if int(obj_value + EPS) <= self.best_solution:
             return
 
         while True:
@@ -123,10 +125,39 @@ class BranchAndCutSolver(MaxCliqueSolver):
             solution, t = self.solve()
             self.variables = solution.get_values()
 
-            if int(sum(self.variables) + EPS) <= self.best_solution:
+            obj_value = solution.get_objective_value()
+            print(obj_value)
+
+            if int(obj_value + EPS) <= self.best_solution:
                 return
 
-        self.branching()
+        idx = self.branching()
+        if idx == -1:
+            curr_clique = np.argwhere(
+                (1-EPS < np.array(self.variables)) & (np.array(self.variables) < 1+EPS)
+            ).squeeze().tolist()
+
+            check = self.check_solution(curr_clique)
+            if len(check) > 0:
+                for constraint in check:
+                    self.add_constraint(constraint)
+                self.cut()
+            else:
+                self.best_solution = sum(self.variables)
+                self.best_vertexes = curr_clique
+                print(f"Current best solution: {math.floor(self.best_solution)}")
+            return
+
+        self.branch_num += 1
+        current_branch = self.branch_num
+
+        if idx == -1:
+            print()
+
+        for val in [1.0, 0.0]:
+            self._create_branch_constraint(idx, val, current_branch)
+            self.cut()
+            self.problem.linear_constraints.delete(f'branch_{current_branch}')
 
     def get_independent_vertexes(self, vertexes, independent_vertexes=None):
         if independent_vertexes is None:
@@ -157,47 +188,28 @@ class BranchAndCutSolver(MaxCliqueSolver):
     def branching(self):
 
         solution, t = self.solve()
+        self.variables = solution.get_values()
+
         # self.total_time += t
         # if self.total_time >= self.max_time:
         #     print("!!! Time limit reached, turning back !!!")
         #     return
 
-        self.variables = solution.get_values()
 
-        if int(sum(self.variables) + EPS) <= self.best_solution:
+        obj_value = solution.get_objective_value()
+        if int(obj_value + EPS) <= self.best_solution:
             return
 
         idx = self._get_branch_variable()
 
         if idx is None:
-            curr_clique = np.argwhere(
-                (1-EPS < np.array(self.variables)) & (np.array(self.variables) < 1+EPS)
-            ).squeeze().tolist()
-
-            check = self.check_solution(curr_clique)
-            if len(check) > 0:
-                for constraint in check:
-                    self.add_constraint(constraint)
-                self.cut()
-            else:
-                self.best_solution = sum(self.variables)
-                self.best_vertexes = curr_clique
-                print(f"Current best solution: {math.floor(self.best_solution)}")
+            return -1
         else:
-            self.branch_num += 1
-            current_branch = self.branch_num
-
-            self._create_branch_constraint(idx, 1.0, current_branch)
-            self.branching()
-            self.problem.linear_constraints.delete(f'branch_{current_branch}')
-
-            self._create_branch_constraint(idx, 0.0, current_branch)
-            self.branching()
-            self.problem.linear_constraints.delete(f'branch_{current_branch}')
+            return idx
 
     def separation(self, values, vertexes=None):
         # heuristic to find independent set with max weight
-        values = np.array(values)
+        values = np.array(values).round(10)
         n = values.size
         independent_vertexes = set([i for i in range(n)])
 
@@ -207,7 +219,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
             current_vertex = vertexes[1]
             weights_sum = sum(vertexes)
             new_constraints = [*vertexes]
-        else:  # uses in regular cut function
+        else:  # used in regular cut function
             current_vertex = np.argmax(values)
             weights_sum = values[current_vertex]
             new_constraints = [current_vertex]
@@ -223,7 +235,8 @@ class BranchAndCutSolver(MaxCliqueSolver):
                 new_constraints.append(current_vertex)
                 weights_sum += weights[max_idx]
             else:
-                if len(new_constraints) > 2 and weights_sum > 1:
+                # FIXME: something wrong here with weight sum, check this out tomorrow with seed 5
+                if len(new_constraints) >= 2 and np.round(weights_sum, 8) > 1:
                     return new_constraints
                 else:
                     return None
