@@ -11,8 +11,6 @@ from lab_bnb.branch_and_bound import parse_args, BranchAndBoundSolver
 EPS = 1e-5
 
 import random
-# random.seed(3)        # or any integer
-# np.random.seed(3)
 
 
 class BranchAndCutSolver(MaxCliqueSolver):
@@ -26,7 +24,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
         self.cut_num = 0
         self.total_time = 0
         self.max_time = 3600  # seconds
-
+        self.prev_obj_value = -1
         self._first_step()
 
     def _first_step(self):
@@ -122,10 +120,6 @@ class BranchAndCutSolver(MaxCliqueSolver):
         solution = self.get_solution_vars()
         if not solution:
             return
-        # self.total_time += t
-        # if self.total_time >= self.max_time:
-        #     print("!!! Time limit reached, turning back !!!")
-        #     return
 
         self.variables = solution.get_values()
 
@@ -148,12 +142,17 @@ class BranchAndCutSolver(MaxCliqueSolver):
                 return
 
             obj_value = solution.get_objective_value()
-            # print(obj_value)
+
+            if np.round(obj_value, 2) == np.round(self.prev_obj_value, 2):
+                self.prev_obj_value = obj_value
+                break
+
+            self.prev_obj_value = obj_value
 
             if int(obj_value + EPS) <= self.best_solution:
                 return
 
-        self.tailing_off(solution)
+        # self.tailing_off(solution)
 
         idx = self.branching()
         if idx == -1:
@@ -212,16 +211,6 @@ class BranchAndCutSolver(MaxCliqueSolver):
         solution, t = self.solve()
         self.variables = solution.get_values()
 
-        # self.total_time += t
-        # if self.total_time >= self.max_time:
-        #     print("!!! Time limit reached, turning back !!!")
-        #     return
-
-
-        obj_value = solution.get_objective_value()
-        if int(obj_value + EPS) <= self.best_solution:
-            return
-
         idx = self._get_branch_variable()
 
         if idx is None:
@@ -272,7 +261,7 @@ def main():
     end = time()
 
     print(f"CPLEX Time {end - start:.4f} sec.")
-
+    print(f"Best solution: {bnc.best_solution}")
 
 if __name__ == '__main__':
     main()
