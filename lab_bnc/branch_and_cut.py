@@ -95,7 +95,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
         else:
             return None
 
-    def tailing_off(self, solution):
+    def remove_low_slacks(self, solution):
         slacks = np.array(solution.get_linear_slacks())
         names = self.problem.linear_constraints.get_names()
 
@@ -143,6 +143,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
 
             obj_value = solution.get_objective_value()
 
+            # reduce tailing-off effect
             if np.round(obj_value, 2) == np.round(self.prev_obj_value, 2):
                 self.prev_obj_value = obj_value
                 break
@@ -152,7 +153,7 @@ class BranchAndCutSolver(MaxCliqueSolver):
             if int(obj_value + EPS) <= self.best_solution:
                 return
 
-        # self.tailing_off(solution)
+        # self.remove_low_slacks(solution)
 
         idx = self.branching()
         if idx == -1:
